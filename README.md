@@ -65,3 +65,20 @@ The detect_conflicts() method scans all scheduled tasks and warns when two or mo
 tasks share the same time slot — across any pet. It uses a defaultdict to group tasks
 by time in a single pass and returns human-readable warning strings rather than
 crashing the program, keeping the scheduler fault-tolerant.
+
+
+### Testing PawPal+
+
+Confidence level: 5 stars.
+
+Here's all of the things I tested:
+
+TestTaskCompletion (original) — test_mark_complete_changes_status checks that calling mark_complete() flips completed from False to True.
+TestTaskAddition (original) — test_add_task_increases_count checks that adding a task to a pet increases the task list length from 0 to 1.
+TestSortByTime — test_chronological_order_24h verifies 24-hour times sort correctly. test_tbd_sorts_after_timed_tasks confirms "TBD" lands at the end. test_12h_format_breaks_sort documents that "12:00 PM" mis-sorts against "14:00".
+TestRecurrence — test_daily_recurrence_creates_next_task and test_weekly_recurrence_creates_next_task verify new tasks are appended after completion. test_no_recurrence_for_one_off_task confirms "once" frequency doesn't recur. test_recurrence_without_pet_silently_skips checks that pet-less tasks don't crash. test_next_time_drifts_from_original documents the drift bug where next time is based on now() instead of the original schedule.
+TestConflictDetection — test_exact_time_conflict_flagged confirms same-time tasks produce a warning. test_no_conflict_different_times confirms different times are clean. test_overlapping_duration_not_detected documents that duration-based overlaps are missed. test_cross_pet_conflict_flagged_as_false_positive documents that different pets at the same time are incorrectly flagged.
+TestFilterTasks — test_filter_by_pet_name, test_filter_by_task_type, test_filter_by_completed_status, and test_filter_by_pending_status each test one filter dimension. test_filter_orphan_task_by_pet_name_excluded confirms pet-less tasks are safely filtered out. test_filter_case_insensitive_pet_name checks lowercase matching. test_combined_filters tests pet name + status together.
+TestGeneratePlan — test_empty_plan_no_pets and test_empty_plan_pet_with_no_tasks verify empty plans don't crash. test_warning_when_time_exceeded confirms a warning prints when tasks exceed available time. test_plan_sorted_by_priority_then_time checks the sort order of the generated plan.
+TestOwnerAndPet — test_get_total_task_time verifies duration summing. test_get_pending_tasks_excludes_completed checks the pending filter. test_task_repr_status_indicator confirms the ✓/✗ toggle in __repr__.
+That's 28 tests total, and 26 passed on the last run. After applying the two fixes from the diff, all 28 should pass.

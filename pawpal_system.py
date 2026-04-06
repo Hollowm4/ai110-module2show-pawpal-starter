@@ -188,14 +188,14 @@ class PetCareScheduler:
     ) -> List[Task]:
         from datetime import datetime
         result = tasks
-    """
+        """
         Filter tasks by pet name, task type, and/or completion status.
         Runs up to three independent passes in sequence.
         "overdue" derived dynamically via datetime.now() — never stored.
         Any parameter left as None is skipped entirely.
         Args: tasks, pet_name, task_type, status.
         Returns: Filtered list of Task objects.
-    """
+        """
 
         # Pass 1 — filter by pet name
         if pet_name:
