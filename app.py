@@ -58,7 +58,7 @@ with col1:
     task_type = st.selectbox("Task type", list(TASK_TYPES.keys()))
     task_title = st.text_input("Description", value="Morning walk")
 with col2:
-    task_time = st.text_input("Time", value="08:00 AM")
+    task_time = st.text_input("Time (HH:MM)", value="08:00 AM")
     duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
 with col3:
     frequency = st.selectbox("Frequency", ["daily", "weekly", "monthly"])
@@ -98,26 +98,58 @@ st.divider()
 
 # ── Step 3: Generate Schedule ─────────────────────────────────────────────────
 st.subheader("Step 3: Generate Schedule")
-st.caption("Runs the scheduler and displays today's plan.")
+
+# Filter controls
+st.caption("Optional filters")
+col_f1, col_f2 = st.columns(2)
+with col_f1:
+    filter_type = st.selectbox("Filter by type", ["All"] + list(TASK_TYPES.keys()))
+with col_f2:
+    filter_status = st.selectbox("Filter by status", ["All", "pending", "completed", "overdue"])
 
 if st.button("Generate schedule"):
     if not st.session_state.tasks:
         st.warning("Please add at least one task before generating a schedule.")
     else:
-        scheduler = PetCareScheduler(st.session_state.owner)   # PetCareScheduler
-        plan = scheduler.generate_plan()                        # generate_plan()
+        scheduler = PetCareScheduler(st.session_state.owner)
+        all_tasks = st.session_state.owner.get_all_tasks()
 
-        st.success("Schedule generated!")
+        # ── Conflict detection ─────────────────────────────────────────────
+        conflicts = scheduler.detect_conflicts(all_tasks)
+        if conflicts:
+            for c in conflicts:
+                st.warning(f"⚠️ {c}")
+        else:
+            st.success("No scheduling conflicts detected.")
+
+        # ── Apply filters ──────────────────────────────────────────────────
+        filtered = scheduler.filter_tasks(
+            all_tasks,
+            task_type=None if filter_type == "All" else filter_type,
+            status=None if filter_status == "All" else filter_status,
+        )
+
+        # ── Sort by time ───────────────────────────────────────────────────
+        plan = scheduler.sort_by_time(filtered)
+
+        # ── Display schedule ───────────────────────────────────────────────
         st.markdown("### Today's Schedule")
-        for task in plan:
-            st.markdown(
-                f"- **Priority {task.priority}** | `{task.__class__.__name__}` — "
-                f"{task.description} @ {task.time} ({task.duration} min)"
-            )
+        if plan:
+            st.table([{
+                "Time": t.time,
+                "Type": t.__class__.__name__,
+                "Description": t.description,
+                "Duration (min)": t.duration,
+                "Priority": t.priority,
+                "Status": "✓ Done" if t.completed else "Pending"
+            } for t in plan])
+        else:
+            st.info("No tasks match the selected filters.")
 
-        total = st.session_state.owner.get_total_task_time()   # Owner.get_total_task_time()
+        # ── Time summary ───────────────────────────────────────────────────
+        total = st.session_state.owner.get_total_task_time()
         available = st.session_state.owner.time_available
         if total > available:
             st.warning(f"⚠️ Total time needed ({total} min) exceeds available time ({available} min).")
         else:
-            st.info(f"✅ Total time: {total} min / {available} min available.")
+            st.success(f"✅ Total time: {total} min / {available} min available.")

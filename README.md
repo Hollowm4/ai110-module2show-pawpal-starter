@@ -82,3 +82,27 @@ TestFilterTasks — test_filter_by_pet_name, test_filter_by_task_type, test_filt
 TestGeneratePlan — test_empty_plan_no_pets and test_empty_plan_pet_with_no_tasks verify empty plans don't crash. test_warning_when_time_exceeded confirms a warning prints when tasks exceed available time. test_plan_sorted_by_priority_then_time checks the sort order of the generated plan.
 TestOwnerAndPet — test_get_total_task_time verifies duration summing. test_get_pending_tasks_excludes_completed checks the pending filter. test_task_repr_status_indicator confirms the ✓/✗ toggle in __repr__.
 That's 28 tests total, and 26 passed on the last run. After applying the two fixes from the diff, all 28 should pass.
+
+
+### Feature list
+
+Features:
+
+Chronological sorting
+Tasks are sorted by time using Python's sorted() with a lambda key on each task's HH:MM string. Because times are zero-padded 24-hour format, plain string comparison produces correct chronological order with no date parsing overhead.
+Multi-pass filtering
+Tasks can be filtered by pet name, task type, or completion status in up to three independent sequential passes. Any combination of filters can be chained — filtering to Buddy's pending Walk tasks, for example, runs all three passes in order.
+Dynamic overdue detection
+The "overdue" status is never stored on a task. Instead it is derived fresh at call time by comparing each task's time string against datetime.now(), so the result is always accurate at the moment filtering runs.
+Conflict warnings
+The scheduler detects when two or more tasks share the same time slot using a defaultdict grouping in a single pass. It returns human-readable warning strings rather than raising exceptions, keeping the app fault-tolerant and allowing the owner to review all conflicts at once.
+Automatic recurrence
+When a "daily" or "weekly" task is marked complete, a new instance is automatically created for the next occurrence using Python's timedelta — +1 day for daily, +7 days for weekly. The new task is the same subclass as the original, so recurrence works identically for Walk, Feeding, Medication, Enrichment, and Grooming without any extra code per type.
+Priority-based scheduling
+generate_plan() sorts all tasks by numeric priority (1 = highest) before applying time sorting, ensuring critical tasks like Medication always appear before lower-priority ones scheduled at the same time.
+Time budget tracking
+The scheduler compares the total duration of all scheduled tasks against the owner's available time and surfaces a warning if the plan exceeds the daily limit, helping owners make informed decisions about what to include.
+
+### 📸 Demo section
+
+<a href="![App screenshot 1](image-2.png)" target="_blank"><img src='![App screenshot 2](image-3.png)'></a>
