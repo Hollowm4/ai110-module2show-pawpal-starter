@@ -1,0 +1,16 @@
+__pycache__/
+.venv/
+.venv_new/
+.pytest_cache/
+.DS_Store
+*.exe
+*.zip
+*.pdf
+*.docx
+*.msi
+*.mp4
+*.mov
+*.jpg
+*.jpeg
+*.png
+*.m4a
